@@ -46,11 +46,12 @@ test('create new UK test account', async ({page}) => {
     await page.getByLabel('Given Name').fill('Steven');
     await page.getByLabel('Family Name').fill('Segaud');
     // 1. Focus the dropdown input
-    await page.locator('#location').fill('United');
+    await page.getByRole('button', {name: /select farm location/i}).click;
     // 2. Select the option from dropdown
-    await page.getByText('(UK) United Kingdom').click();
+    await page.getByText('(UK) United Kingdom').click;
     await page.getByLabel('Phone Number').fill('07934108770');
-    await page.getByLabel('Did you buy hardware?').click('Yes');
+    await page.getByRole('button', {name: /Did you buy hardware?/i}).click;
+    await page.getByText('Yes').click
     await page.click('button[type="submit"]');
 
     const frame = page.frameLocator('iframe');
