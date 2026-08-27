@@ -26,7 +26,7 @@ async function waitForVerificationCode(filePath, timeoutMs = 180000, pollMs = 10
 
 test('create new UK test account', async ({page}) => {
     test.setTimeout(180000);
-    await page.goto('https://feature-ilc-176-ui-update-cherry-picked.d29utjx8um7ttt.amplifyapp.com/registration');
+    await page.goto('https://dashboard-staging.ilivestock.co.uk/registration');
     await expect(page.getByRole('heading', {name: /Create your iLivestock account/i})).toBeVisible();
     const random = Math.floor(Math.random() * 100000);
     const email = `steven+test${random}@ilivestock.co.uk`;
