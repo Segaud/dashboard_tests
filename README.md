@@ -24,6 +24,6 @@ npm install
 npx playwright install
 npx playwright test
 
-- tests/dashboard_tests/tests has my login tests and create account tests
+- dashboard_tests/tests has my login tests and create account tests
 
 When instructed to, paste verification code sent to the email, into verification-code.txt and save the file. This text is then deleted once its been used to create an account.
