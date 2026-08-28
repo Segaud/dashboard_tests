@@ -54,12 +54,21 @@ test('create new UK test account', async ({page}) => {
     await page.getByText('Yes').click()
     await page.click('button[type="submit"]');
 
-    const pricingFrame = page.frameLocator('stripe-pricing-table iframe[src*="pricing-table-app"]');
-    const priceDisplay = pricingFrame.locator('.CurrencyAmount');
-    const startTrialButton = pricingFrame.getByRole('button', {name: /start trial/i});
-    await expect(priceDisplay).toHaveText('£27.50', {timeout: 30000});
-    await expect(startTrialButton).toBeVisible({timeout: 30000});
+    let pricingFrame;
+    await expect.poll(() => {
+      pricingFrame = page.frames().find(frame => frame.url().includes('/v3/pricing-table-app'));
+        return Boolean(pricingFrame);
+    }, {timeout: 30000}).toBe(true);
+    await expect(pricingFrame.locator('body')).toContainText(
+        'iLivestock Platform',
+        { timeout: 30000 }
+    );
 
+    const priceDisplay = pricingFrame.getByText('£27.50', {exact: true});
+    const startTrialButton = pricingFrame.getByRole('button', {name: /start trial/i});
+
+    await expect(priceDisplay).toBeVisible({ timeout: 30000 });
+    await expect(startTrialButton).toBeVisible({ timeout: 30000 });
     await startTrialButton.click();
 
     await expect(page).toHaveURL(/checkout\.stripe\.com/);
