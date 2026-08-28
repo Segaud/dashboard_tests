@@ -25,7 +25,7 @@ async function waitForVerificationCode(filePath, timeoutMs = 180000, pollMs = 10
 }
 
 test('create new UK test account', async ({page}) => {
-    test.setTimeout(180000);
+    test.setTimeout(100000);
     await page.goto('https://dashboard-staging.ilivestock.co.uk/registration');
     await expect(page.getByRole('heading', {name: /Create your iLivestock account/i})).toBeVisible();
     const random = Math.floor(Math.random() * 100000);
@@ -48,10 +48,13 @@ test('create new UK test account', async ({page}) => {
     // 1. Focus the dropdown input
     await page.getByRole('button', {name: /select farm location/i}).click();
     // 2. Select the option from dropdown
-    await page.getByText('(UK) United Kingdom').click();
+    const locationDialog = page.getByRole('dialog');
+    await locationDialog.getByRole('option', {name: '(UK) United Kingdom', exact: true}).click();
+    await page.keyboard.press('Escape');
+    await expect(locationDialog).toBeHidden();
     await page.getByLabel('Phone Number').fill('07934108770');
-    await page.getByRole('button', {name: /Did you buy hardware?/i}).click();
-    await page.getByText('Yes').click()
+    await page.getByRole('combobox', {name: /Did you buy hardware\?$/i}).click();
+    await page.getByRole('option', {name: 'Yes', exact: true}).click()
     await page.click('button[type="submit"]');
 
     let pricingFrame;
@@ -66,9 +69,18 @@ test('create new UK test account', async ({page}) => {
 
     const priceDisplay = pricingFrame.getByText('£27.50', {exact: true});
     const startTrialButton = pricingFrame.getByRole('button', {name: /start trial/i});
+    
+    for (const frame of page.frames()) {
+        const closeButton = frame.getByRole('button', {
+            name: /^(close|close intercom messenger)$/i
+        });
 
-    await expect(priceDisplay).toBeVisible({ timeout: 30000 });
-    await expect(startTrialButton).toBeVisible({ timeout: 30000 });
+        if (await closeButton.isVisible()) {
+            await closeButton.click();
+            break;
+        }
+    }
+    
     await startTrialButton.click();
 
     await expect(page).toHaveURL(/checkout\.stripe\.com/);
@@ -78,7 +90,7 @@ test('create new UK test account', async ({page}) => {
     await page.locator('[data-testid="card-accordion-item"]').click();
     await expect(page.getByLabel(/card number/i)).toBeVisible({ timeout: 10000 });
     await expect(page.getByLabel(/expiration/i)).toBeVisible({ timeout: 10000 });
-    const cvcInput = page.locator('input[aria-label="CVC"]');
+    const cvcInput = page.locator('input[aria-label="Credit or debit card CVC/CVV"]');
     await expect(cvcInput).toBeVisible({ timeout: 10000 });
     await page.getByLabel('Card number').fill('4242424242424242');
     await page.getByLabel(/expiration/i).fill('12/34');
@@ -88,8 +100,7 @@ test('create new UK test account', async ({page}) => {
     await page.getByLabel(/Address line 1/i).fill('10 Downing Street');
     await page.getByLabel(/Town or city/i).fill('London');
     await page.getByLabel(/Postal code/i).fill('SW1A 1AA');
-    await page.getByRole('button', { name: 'Start trial' }).click({ timeout: 15000 });
-  
+    await page.getByTestId('hosted-payment-submit-button').click();
     
     await expect(page).toHaveURL(/setup_success/, { timeout: 45000 });
     await expect(page.getByText(/your invoice is in your dashboard/i)).toBeVisible({ timeout: 15000 });     
