@@ -54,16 +54,12 @@ test('create new UK test account', async ({page}) => {
     await page.getByText('Yes').click
     await page.click('button[type="submit"]');
 
-    const frame = page.frameLocator('iframe');
-    const startTrialButton = frame.getByRole('button', { name: /start trial/i });
-    await page.waitForTimeout(1000); // Wait for 1 second to ensure the price is loaded
-    const priceDisplay = frame.locator('.CurrencyAmount');
-    console.log('iframe count:', await page.locator('iframe').count());
-    console.log('price count:', await priceDisplay.count());
-    console.log('price texts:', await priceDisplay.allTextContents());
-    console.log(await frame.locator('body').innerText());
-    await expect(priceDisplay).toHaveText('£27.50', { timeout: 10000 });
-    await expect(startTrialButton).toBeVisible({ timeout: 15000 });
+    const pricingFrame = page.frameLocator('stripe-pricing-table iframe[src*="pricing-table-app"]');
+    const priceDisplay = pricingFrame.locator('.CurrencyAmount');
+    const startTrialButton = pricingFrame.getByRole('button', {name: /start trial/i});
+    await expect(priceDisplay).toHaveText('£27.50', {timeout: 30000});
+    await expect(startTrialButton).toBeVisible({timeout: 30000});
+
     await startTrialButton.click();
 
     await expect(page).toHaveURL(/checkout\.stripe\.com/);
