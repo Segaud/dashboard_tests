@@ -90,7 +90,7 @@ test('create new UK test account', async ({page}) => {
     await page.locator('[data-testid="card-accordion-item"]').click();
     await expect(page.getByLabel(/card number/i)).toBeVisible({ timeout: 10000 });
     await expect(page.getByLabel(/expiration/i)).toBeVisible({ timeout: 10000 });
-    const cvcInput = page.getByRole('textbox', {name: 'CVC', exact: true});
+    const cvcInput = page.getByRole('textbox', { name: /CVC/i });
     await expect(cvcInput).toBeVisible({ timeout: 10000 });
     await page.getByLabel('Card number').fill('4242424242424242');
     await page.getByLabel(/expiration/i).fill('12/34');
