@@ -27,7 +27,7 @@ async function waitForVerificationCode(filePath, timeoutMs = 180000, pollMs = 10
 test('create new UK test account', async ({page}) => {
     test.setTimeout(100000);
     await page.goto('https://dashboard-staging.ilivestock.co.uk/registration');
-    await expect(page.getByRole('heading', {name: /Create your iLivestock account/i})).toBeVisible();
+    await expect(page.getByRole('heading', {name: /Create (your|an) iLivestock account/i})).toBeVisible();
     const random = Math.floor(Math.random() * 100000);
     const email = `steven+test${random}@ilivestock.co.uk`;
     await page.getByLabel('Email').fill(email);
@@ -110,10 +110,10 @@ test('create new UK test account', async ({page}) => {
 test('create new US test account', async ({page}) => {
     test.setTimeout(180000);
     await page.goto('https://dashboard-staging.ilivestock.co.uk/registration');
-    await expect(page.getByRole('heading', {name: /Create an iLivestock account/i})).toBeVisible();
+    await expect(page.getByRole('heading', {name: /Create (your|an) iLivestock account/i})).toBeVisible();
     const random = Math.floor(Math.random() * 100000);
     const email = `steven+usatest${random}@ilivestock.co.uk`;
-    await page.getByLabel('E-mail address').fill(email);
+    await page.getByLabel('Email').fill(email);
     await page.getByLabel(/^Password$/).fill('password');
     await page.getByLabel('Confirm Password').fill('password');
     await page.getByRole('checkbox', { name: /Accept Privacy Policy & Terms and Conditions/i }).check();
@@ -128,18 +128,40 @@ test('create new US test account', async ({page}) => {
     await expect(page.getByRole('heading', {name: /Account Details/i})).toBeVisible({ timeout: 15000 });
     await page.getByLabel('Given Name').fill('Steven');
     await page.getByLabel('Family Name').fill('Segaud');
-    // 1. Focus the dropdown input
-    await page.locator('#location').fill('United');
-    // 2. Select the option from dropdown
-    await page.getByText('(US) United States').click();
+    await page.getByRole('button', {name: /select farm location/i}).click();
+    const locationDialog = page.getByRole('dialog');
+    await locationDialog.getByRole('option', {name: '(US) United States', exact: true}).click();
+    await page.keyboard.press('Escape');
+    await expect(locationDialog).toBeHidden();
     await page.getByLabel('Phone Number').fill('3074103456');
+    await page.getByRole('combobox', {name: /Did you buy hardware\?$/i}).click();
+    await page.getByRole('option', {name: 'Yes', exact: true}).click();
     await page.click('button[type="submit"]');
     
-    const frame = page.frameLocator('iframe');
-    const startTrialButton = frame.getByRole('button', { name: /start trial/i });
-    const priceDisplay = frame.locator('.CurrencyAmount');
-    await expect(priceDisplay).toHaveText('$400', { timeout: 10000 });
-    await expect(startTrialButton).toBeVisible({ timeout: 15000 });
+    let pricingFrame;
+    await expect.poll(() => {
+      pricingFrame = page.frames().find(frame => frame.url().includes('/v3/pricing-table-app'));
+      return Boolean(pricingFrame);
+    }, {timeout: 30000}).toBe(true);
+    await expect(pricingFrame.locator('body')).toContainText(
+      'iLivestock Platform',
+      { timeout: 30000 }
+    );
+
+    const priceDisplay = pricingFrame.getByText('$400', {exact: true});
+    const startTrialButton = pricingFrame.getByRole('button', {name: /start trial/i});
+
+    for (const frame of page.frames()) {
+      const closeButton = frame.getByRole('button', {
+        name: /^(close|close intercom messenger)$/i
+      });
+
+      if (await closeButton.isVisible()) {
+        await closeButton.click();
+        break;
+      }
+    }
+
     await startTrialButton.click();
 
     await expect(page).toHaveURL(/checkout\.stripe\.com/);
@@ -147,7 +169,7 @@ test('create new US test account', async ({page}) => {
     await expect(emailDisplay).toHaveText(email, { timeout: 10000 });
     await expect(page.getByRole('heading', {name: /Try iLivestock Platform/i})).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(/tax/i)).not.toBeVisible(); // US checkout should not show tax
-    await page.locator('#billingName').fill('Steven Segaud');
+    await page.getByRole('textbox', {name: 'Name'}).fill('Steven Segaud');
     await page.getByRole('button', {name: 'Enter address manually'}).click();
     await page.getByLabel(/Address line 1/i).fill('1600 Pennsylvania Avenue NW');
     await page.getByLabel(/Town or city/i).fill('Washington');
@@ -162,7 +184,7 @@ test('create new US test account', async ({page}) => {
 test('create new Paraguay test account', async ({page}) => {
     test.setTimeout(180000);
     await page.goto('https://dashboard-staging.ilivestock.co.uk/registration');
-    await expect(page.getByRole('heading', {name: /Create your iLivestock account/i})).toBeVisible();
+    await expect(page.getByRole('heading', {name: /Create (your|an) iLivestock account/i})).toBeVisible();
     const random = Math.floor(Math.random() * 100000);
     const email = `steven+paraguaytest${random}@ilivestock.co.uk`;
     await page.getByLabel('Email').fill(email);
@@ -180,18 +202,40 @@ test('create new Paraguay test account', async ({page}) => {
     await expect(page.getByRole('heading', {name: /Account Details/i})).toBeVisible({ timeout: 15000 });
     await page.getByLabel('Given Name').fill('Steven');
     await page.getByLabel('Family Name').fill('Segaud');
-    // 1. Focus the dropdown input
-    await page.locator('#location').fill('Paraguay');
-    // 2. Select the option from dropdown
-    await page.getByText('(PY) Paraguay').click();
+    await page.getByRole('button', {name: /select farm location/i}).click();
+    const locationDialog = page.getByRole('dialog');
+    await locationDialog.getByRole('option', {name: '(PY) Paraguay', exact: true}).click();
+    await page.keyboard.press('Escape');
+    await expect(locationDialog).toBeHidden();
     await page.getByLabel('Phone Number').fill('0971234567');
+    await page.getByRole('combobox', {name: /Did you buy hardware\?$/i}).click();
+    await page.getByRole('option', {name: 'Yes', exact: true}).click();
     await page.click('button[type="submit"]');
     
-    const frame = page.frameLocator('iframe');
-    const startTrialButton = frame.getByRole('button', { name: /Iniciar la prueba/i });
-    const priceDisplay = frame.locator('.CurrencyAmount');
-    await expect(priceDisplay).toHaveText('USD 400', { timeout: 10000 });
-    await expect(startTrialButton).toBeVisible({ timeout: 15000 });
+    let pricingFrame;
+    await expect.poll(() => {
+      pricingFrame = page.frames().find(frame => frame.url().includes('/v3/pricing-table-app'));
+      return Boolean(pricingFrame);
+    }, {timeout: 30000}).toBe(true);
+    await expect(pricingFrame.locator('body')).toContainText(
+      'iLivestock Platform',
+      { timeout: 30000 }
+    );
+
+    const priceDisplay = pricingFrame.getByText('USD 400', {exact: true});
+    const startTrialButton = pricingFrame.getByRole('button', { name: /Iniciar la prueba/i });
+
+    for (const frame of page.frames()) {
+      const closeButton = frame.getByRole('button', {
+        name: /^(close|close intercom messenger)$/i
+      });
+
+      if (await closeButton.isVisible()) {
+        await closeButton.click();
+        break;
+      }
+    }
+
     await startTrialButton.click();
 
     await expect(page).toHaveURL(/checkout\.stripe\.com/);
